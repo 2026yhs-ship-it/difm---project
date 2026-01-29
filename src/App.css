@@ -1,0 +1,345 @@
+.app {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+  color: #f1f5f9;
+}
+
+/* Main Menu */
+.main-menu {
+  text-align: center;
+  padding: 2rem;
+  max-width: 420px;
+}
+
+.main-menu__title {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 0.25rem;
+  letter-spacing: 0.05em;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.main-menu__sub {
+  font-size: 0.95rem;
+  color: #94a3b8;
+  margin-bottom: 2rem;
+}
+
+.main-menu__btn {
+  display: inline-block;
+  padding: 0.85rem 2.5rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.2s;
+  margin-bottom: 2.5rem;
+}
+
+.main-menu__btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(251, 191, 36, 0.35);
+}
+
+.main-menu__btn:active {
+  transform: translateY(0);
+}
+
+.main-menu__how {
+  text-align: left;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+}
+
+.main-menu__how h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: #e2e8f0;
+}
+
+.main-menu__how ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.75rem 0;
+}
+
+.main-menu__how li {
+  font-size: 0.9rem;
+  color: #cbd5e1;
+  margin-bottom: 0.4rem;
+}
+
+.main-menu__how kbd {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 6px;
+  margin-right: 0.35rem;
+}
+
+.main-menu__how p {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  margin: 0;
+}
+
+/* Game */
+.game-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  position: relative;
+}
+
+.game-canvas {
+  display: block;
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+  border: 3px solid rgba(251, 191, 36, 0.3);
+  max-width: 100%;
+  height: auto;
+}
+
+/* 일시정지 오버레이 */
+.pause-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+}
+
+.pause-menu {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  border: 2px solid rgba(251, 191, 36, 0.4);
+  border-radius: 16px;
+  padding: 2.5rem 3rem;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  min-width: 320px;
+}
+
+.pause-title {
+  font-size: 2rem;
+  font-weight: 800;
+  margin: 0 0 2rem 0;
+  color: #fbbf24;
+  letter-spacing: 0.05em;
+}
+
+.pause-bgm {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.pause-bgm-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  white-space: nowrap;
+}
+
+.pause-bgm-slider {
+  flex: 1;
+  min-width: 120px;
+  height: 8px;
+  accent-color: #fbbf24;
+  cursor: pointer;
+}
+
+.pause-bgm-value {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #fbbf24;
+  min-width: 2.5rem;
+  text-align: right;
+}
+
+.pause-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.pause-btn {
+  padding: 0.85rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.2s, opacity 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pause-btn--resume {
+  color: #0f172a;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+}
+
+.pause-btn--resume:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(251, 191, 36, 0.4);
+}
+
+.pause-btn--resume:active {
+  transform: translateY(0);
+}
+
+.pause-btn--quit {
+  color: #fff;
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+}
+
+.pause-btn--quit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(220, 38, 38, 0.4);
+}
+
+.pause-btn--quit:active {
+  transform: translateY(0);
+}
+
+.pause-hint {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  margin: 0;
+  font-style: italic;
+}
+
+/* Victory */
+.victory {
+  text-align: center;
+  padding: 2rem;
+  max-width: 400px;
+}
+
+.victory__title {
+  font-size: 2.25rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.02em;
+}
+
+.victory__score {
+  font-size: 1rem;
+  color: #94a3b8;
+  margin-bottom: 2rem;
+}
+
+.victory__actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.victory__btn {
+  padding: 0.75rem 1.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.2s;
+  border: 2px solid transparent;
+}
+
+.victory__btn {
+  color: #0f172a;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+}
+
+.victory__btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(251, 191, 36, 0.3);
+}
+
+.victory__btn--outline {
+  color: #fbbf24;
+  background: transparent;
+  border-color: #fbbf24;
+}
+
+.victory__btn--outline:hover {
+  background: rgba(251, 191, 36, 0.15);
+  box-shadow: 0 6px 20px rgba(251, 191, 36, 0.2);
+}
+
+.victory__btn:active {
+  transform: translateY(0);
+}
+
+/* BGM — 일반 embed만 사용(API 미사용), postMessage 경고 없음 */
+.bgm-yt-container {
+  position: fixed;
+  top: -9999px;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.bgm-yt-container--active {
+  width: 200px;
+  height: 120px;
+}
+
+.bgm-yt-container--active iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.bgm-toggle {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 100;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #0f172a;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.35);
+  transition: transform 0.15s, box-shadow 0.2s;
+}
+
+.bgm-toggle:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(251, 191, 36, 0.45);
+}
+
+.bgm-toggle:active {
+  transform: translateY(0);
+}
