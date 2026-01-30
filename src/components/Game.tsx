@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Ball, Entity, Keys, Winner } from '../game/types';
 import {
-  AI_REACTION,
   AI_SPEED,
   AI_START_X,
-  AI_JUMP_CHANCE,
   BALL_BOUNCE,
   BALL_FRICTION,
   BALL_GRAVITY,
@@ -236,6 +234,7 @@ export function Game({ onVictory, onQuit, bgmVolume = 0.7, onBgmVolumeChange }: 
     if (!canvas || !running) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    const c: CanvasRenderingContext2D = ctx;
 
     let rafId: number;
     let last = performance.now();
@@ -438,16 +437,16 @@ export function Game({ onVictory, onQuit, bgmVolume = 0.7, onBgmVolumeChange }: 
       if (ultimateFallingRef.current) {
         const u = ultimateFallingRef.current;
         u.y += 11;
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 22; i++) {
           u.sparks.push({
-            x: u.targetAx + (Math.random() - 0.5) * 100,
-            y: u.y + (Math.random() - 0.5) * 30,
-            vx: (Math.random() - 0.5) * 4,
-            vy: 2 + Math.random() * 4,
-            life: 22 + Math.random() * 28,
-            maxLife: 50,
-            size: 6 + Math.random() * 10,
-            color: ['#fff', '#ffd700', '#ffeb3b', '#fff59d', '#ffe082', '#ffc107', '#fff8e1'][Math.floor(Math.random() * 7)],
+            x: u.targetAx + (Math.random() - 0.5) * 140,
+            y: u.y + (Math.random() - 0.5) * 40,
+            vx: (Math.random() - 0.5) * 6,
+            vy: 3 + Math.random() * 5,
+            life: 25 + Math.random() * 35,
+            maxLife: 60,
+            size: 8 + Math.random() * 14,
+            color: ['#fff', '#ffd700', '#ffeb3b', '#fff59d', '#ffe082', '#ffc107', '#fff8e1', '#ff69b4', '#e1bee7', '#ffab91'][Math.floor(Math.random() * 10)],
           });
         }
         u.sparks = u.sparks.filter((s) => {
@@ -587,49 +586,31 @@ export function Game({ onVictory, onQuit, bgmVolume = 0.7, onBgmVolumeChange }: 
       
       // 공의 예상 위치 계산 (고수 수준 - 매우 정확)
       let predictedBallX = ball.x;
-      let predictedBallY = ball.y;
       if (aiPositionMemoryRef.current.length >= 3) {
         const recent = aiPositionMemoryRef.current.slice(-3);
-        // 현재 속도와 가속도 모두 고려
         const vx = recent[2].x - recent[0].x;
-        const vy = recent[2].y - recent[0].y;
         const currentVx = ball.vx;
-        const currentVy = ball.vy;
-        
-        // 더 정확한 예측 (속도와 위치 기록 모두 사용)
         const avgVx = (vx + currentVx) / 2;
-        const avgVy = (vy + currentVy) / 2;
-        
-        // 중력과 마찰 고려한 예측
         const timeToReach = Math.abs(diffX) / (Math.abs(avgVx) + 0.1);
         const frictionFactor = Math.pow(BALL_FRICTION, timeToReach * 60);
-        
         predictedBallX = ball.x + avgVx * timeToReach * frictionFactor;
-        predictedBallY = ball.y + avgVy * timeToReach + BALL_GRAVITY * timeToReach * timeToReach * 0.5;
-        
-        // 플레이어의 움직임도 예측 (공을 향해 올 때)
         if (player.vx !== 0 || player.vy !== 0) {
           const playerToBallX = ball.x - px;
           const playerToBallY = ball.y - py;
           const playerMovingToBall = (player.vx * playerToBallX + player.vy * playerToBallY) > 0;
           if (playerMovingToBall && playerDist < 100) {
-            // 플레이어가 공을 향해 오면 더 앞서서 예측
             predictedBallX += player.vx * 0.3;
           }
         }
       }
       
-      // 상황 분석
       const ballOnAiSide = ball.x > CANVAS_W / 2;
-      const ballOnPlayerSide = ball.x < CANVAS_W / 2;
       const ballMovingToPlayerGoal = ball.vx < -5 && ball.x < CANVAS_W / 2; // 플레이어 골대로
       const ballMovingToAiGoal = ball.vx > 1 && ball.x > CANVAS_W / 2; // AI 골대로 (수비 스택: 더 민감)
       const ballNearPlayerGoal = ball.x < 200 && ball.y > GOAL_TOP && ball.y < GOAL_BOTTOM;
       const ballNearAiGoal = ball.x > CANVAS_W - 350 && ball.y > GOAL_TOP - 60 && ball.y < GOAL_BOTTOM + 60; // AI 골대 근처 (수비 스택: 구역 확대)
       const ballOnAiHalf = ball.x > CANVAS_W / 2; // AI 쪽이면 무조건 플레이어 골대로만
       const ballVeryNearAiGoal = ball.x > CANVAS_W - 250; // 이 구역에서 슈퍼킥 금지, 수비만 (수비 스택: 구역 확대)
-      const playerHasBall = playerDist < 60;
-      const aiHasBall = ballDist < 60;
       
       // 공이 빠르게 플레이어 골대로 올 때 (게임 시작 직후 대응)
       const ballSpeed = Math.hypot(ball.vx, ball.vy);
@@ -942,7 +923,7 @@ export function Game({ onVictory, onQuit, bgmVolume = 0.7, onBgmVolumeChange }: 
       }
 
       // 공-캐릭터 충돌 (머리 영역 포함, 관통 완전 방지)
-      [player, ai].forEach((e, index) => {
+      [player, ai].forEach((e) => {
         const cx = e.x + e.w / 2;
         const cy = e.y + e.h / 2;
         const eHalfW = e.w / 2;
@@ -969,7 +950,6 @@ export function Game({ onVictory, onQuit, bgmVolume = 0.7, onBgmVolumeChange }: 
         const headMinDist = br + headR + 5; // 머리와 공의 최소 거리
         
         let headCollision = false;
-        let headCollisionPoint = { x: bx, y: by };
         
         // 머리 영역 충돌 감지 (이동 경로 포함)
         const ballSpeed = Math.hypot(ball.vx, ball.vy);
@@ -985,7 +965,6 @@ export function Game({ onVictory, onQuit, bgmVolume = 0.7, onBgmVolumeChange }: 
             
             if (checkHeadDist < headMinDist) {
               headCollision = true;
-              headCollisionPoint = { x: checkX, y: checkY };
               break;
             }
           }
@@ -1159,11 +1138,11 @@ export function Game({ onVictory, onQuit, bgmVolume = 0.7, onBgmVolumeChange }: 
     function draw() {
       const w = CANVAS_W;
       const h = CANVAS_H;
-      ctx.clearRect(0, 0, w, h);
+      c.clearRect(0, 0, w, h);
 
       // 세리머니: 득점자 중심 확대 + 화면 회전
       const cel = celebrationRef.current;
-      if (cel.active && ctx) {
+      if (cel.active) {
         const player = playerRef.current;
         const ai = aiRef.current;
         const scorerX = cel.target === 'player' ? player.x + player.w / 2 : ai.x + ai.w / 2;
@@ -1175,58 +1154,58 @@ export function Game({ onVictory, onQuit, bgmVolume = 0.7, onBgmVolumeChange }: 
         const tShake = performance.now() * 0.012;
         const shakeX = Math.sin(tShake) * 6 + Math.sin(tShake * 2.3) * 3;
         const shakeY = Math.cos(tShake * 1.1) * 5 + Math.cos(tShake * 2.7) * 3;
-        ctx.save();
-        ctx.translate(w / 2, h / 2);
-        ctx.translate(shakeX, shakeY);
-        ctx.scale(scale, scale);
-        ctx.rotate(angle);
-        ctx.translate(-scorerX, -scorerY);
+        c.save();
+        c.translate(w / 2, h / 2);
+        c.translate(shakeX, shakeY);
+        c.scale(scale, scale);
+        c.rotate(angle);
+        c.translate(-scorerX, -scorerY);
       }
 
       // 스탠드
-      const standG = ctx.createLinearGradient(0, 0, 0, STAND_HEIGHT);
+      const standG = c.createLinearGradient(0, 0, 0, STAND_HEIGHT);
       standG.addColorStop(0, '#1e3a5f');
       standG.addColorStop(1, '#2a4365');
-      ctx.fillStyle = standG;
-      ctx.fillRect(0, 0, w, STAND_HEIGHT);
-      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      c.fillStyle = standG;
+      c.fillRect(0, 0, w, STAND_HEIGHT);
+      c.fillStyle = 'rgba(0,0,0,0.3)';
       for (let row = 0; row < 4; row++) {
         for (let col = 0; col < 24; col++) {
-          ctx.fillRect(18 + col * 40 + (row % 2) * 18, 10 + row * 14, 10, 12);
+          c.fillRect(18 + col * 40 + (row % 2) * 18, 10 + row * 14, 10, 12);
         }
       }
-      ctx.fillStyle = 'rgba(255,255,255,0.15)';
-      ctx.font = 'bold 16px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('MAD PUFFINS', w / 2, 50);
+      c.fillStyle = 'rgba(255,255,255,0.15)';
+      c.font = 'bold 16px sans-serif';
+      c.textAlign = 'center';
+      c.fillText('MAD PUFFINS', w / 2, 50);
 
       // 필드
-      ctx.fillStyle = '#4caf50';
-      ctx.fillRect(0, FIELD_TOP, w, h - FIELD_TOP);
-      ctx.fillStyle = '#81c784';
-      ctx.fillRect(0, GROUND_Y, w, h - GROUND_Y);
+      c.fillStyle = '#4caf50';
+      c.fillRect(0, FIELD_TOP, w, h - FIELD_TOP);
+      c.fillStyle = '#81c784';
+      c.fillRect(0, GROUND_Y, w, h - GROUND_Y);
 
       // 라인
-      ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(w / 2, FIELD_TOP);
-      ctx.lineTo(w / 2, h);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(w / 2, (FIELD_TOP + GROUND_Y) / 2, 70, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.strokeRect(0, GOAL_TOP - 20, 120, GOAL_BOTTOM - GOAL_TOP + 40);
-      ctx.strokeRect(w - 120, GOAL_TOP - 20, 120, GOAL_BOTTOM - GOAL_TOP + 40);
+      c.strokeStyle = 'rgba(255,255,255,0.6)';
+      c.lineWidth = 3;
+      c.beginPath();
+      c.moveTo(w / 2, FIELD_TOP);
+      c.lineTo(w / 2, h);
+      c.stroke();
+      c.beginPath();
+      c.arc(w / 2, (FIELD_TOP + GROUND_Y) / 2, 70, 0, Math.PI * 2);
+      c.stroke();
+      c.strokeRect(0, GOAL_TOP - 20, 120, GOAL_BOTTOM - GOAL_TOP + 40);
+      c.strokeRect(w - 120, GOAL_TOP - 20, 120, GOAL_BOTTOM - GOAL_TOP + 40);
 
       // 골대
-      ctx.strokeStyle = '#ffd700';
-      ctx.lineWidth = 6;
-      ctx.strokeRect(0, GOAL_TOP, GOAL_DEPTH, GOAL_BOTTOM - GOAL_TOP);
-      ctx.strokeRect(w - GOAL_DEPTH, GOAL_TOP, GOAL_DEPTH, GOAL_BOTTOM - GOAL_TOP);
-      ctx.fillStyle = 'rgba(255,215,0,0.1)';
-      ctx.fillRect(0, GOAL_TOP, GOAL_DEPTH, GOAL_BOTTOM - GOAL_TOP);
-      ctx.fillRect(w - GOAL_DEPTH, GOAL_TOP, GOAL_DEPTH, GOAL_BOTTOM - GOAL_TOP);
+      c.strokeStyle = '#ffd700';
+      c.lineWidth = 6;
+      c.strokeRect(0, GOAL_TOP, GOAL_DEPTH, GOAL_BOTTOM - GOAL_TOP);
+      c.strokeRect(w - GOAL_DEPTH, GOAL_TOP, GOAL_DEPTH, GOAL_BOTTOM - GOAL_TOP);
+      c.fillStyle = 'rgba(255,215,0,0.1)';
+      c.fillRect(0, GOAL_TOP, GOAL_DEPTH, GOAL_BOTTOM - GOAL_TOP);
+      c.fillRect(w - GOAL_DEPTH, GOAL_TOP, GOAL_DEPTH, GOAL_BOTTOM - GOAL_TOP);
 
       // 캐릭터
       function drawChar(e: Entity, isPlayer: boolean) {
@@ -1234,38 +1213,38 @@ export function Game({ onVictory, onQuit, bgmVolume = 0.7, onBgmVolumeChange }: 
         const hy = e.y - e.headRadius + 6;
 
         // 머리
-        ctx.fillStyle = '#f5d0a9';
-        ctx.beginPath();
-        ctx.arc(cx, hy, e.headRadius, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#5d4037';
-        ctx.lineWidth = 2;
-        ctx.stroke();
+        c.fillStyle = '#f5d0a9';
+        c.beginPath();
+        c.arc(cx, hy, e.headRadius, 0, Math.PI * 2);
+        c.fill();
+        c.strokeStyle = '#5d4037';
+        c.lineWidth = 2;
+        c.stroke();
 
         // 머리카락
-        ctx.fillStyle = isPlayer ? '#4a2c0a' : '#1a1a1a';
-        ctx.beginPath();
-        ctx.arc(cx, hy - 6, e.headRadius * 0.85, Math.PI, 2 * Math.PI);
-        ctx.fill();
+        c.fillStyle = isPlayer ? '#4a2c0a' : '#1a1a1a';
+        c.beginPath();
+        c.arc(cx, hy - 6, e.headRadius * 0.85, Math.PI, 2 * Math.PI);
+        c.fill();
 
         // 눈
-        ctx.fillStyle = '#000';
-        ctx.beginPath();
-        ctx.arc(cx - 7, hy - 2, 3, 0, Math.PI * 2);
-        ctx.arc(cx + 7, hy - 2, 3, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#fff';
-        ctx.beginPath();
-        ctx.arc(cx - 6, hy - 3, 1, 0, Math.PI * 2);
-        ctx.arc(cx + 8, hy - 3, 1, 0, Math.PI * 2);
-        ctx.fill();
+        c.fillStyle = '#000';
+        c.beginPath();
+        c.arc(cx - 7, hy - 2, 3, 0, Math.PI * 2);
+        c.arc(cx + 7, hy - 2, 3, 0, Math.PI * 2);
+        c.fill();
+        c.fillStyle = '#fff';
+        c.beginPath();
+        c.arc(cx - 6, hy - 3, 1, 0, Math.PI * 2);
+        c.arc(cx + 8, hy - 3, 1, 0, Math.PI * 2);
+        c.fill();
 
         // 입
-        ctx.strokeStyle = '#8b5a2b';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.arc(cx, hy + 8, 5, 0.1 * Math.PI, 0.9 * Math.PI);
-        ctx.stroke();
+        c.strokeStyle = '#8b5a2b';
+        c.lineWidth = 1.5;
+        c.beginPath();
+        c.arc(cx, hy + 8, 5, 0.1 * Math.PI, 0.9 * Math.PI);
+        c.stroke();
 
         // 몸 (줄무늬)
         const by = e.y + 4;
@@ -1273,314 +1252,357 @@ export function Game({ onVictory, onQuit, bgmVolume = 0.7, onBgmVolumeChange }: 
         const bx = e.x;
         const sw = e.w / 5;
         for (let i = 0; i < 5; i++) {
-          ctx.fillStyle = i % 2 === 0 ? (isPlayer ? '#d32f2f' : '#212121') : '#fff';
-          ctx.fillRect(bx + i * sw, by, sw + 0.5, bh);
+          c.fillStyle = i % 2 === 0 ? (isPlayer ? '#d32f2f' : '#212121') : '#fff';
+          c.fillRect(bx + i * sw, by, sw + 0.5, bh);
         }
 
         // 바지
-        ctx.fillStyle = isPlayer ? '#fff' : '#212121';
-        ctx.fillRect(bx, by + bh, e.w, e.h * 0.5 - 4);
-        ctx.strokeStyle = '#333';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(bx, by, e.w, e.h - 4);
+        c.fillStyle = isPlayer ? '#fff' : '#212121';
+        c.fillRect(bx, by + bh, e.w, e.h * 0.5 - 4);
+        c.strokeStyle = '#333';
+        c.lineWidth = 1;
+        c.strokeRect(bx, by, e.w, e.h - 4);
 
         // "my"
         if (isPlayer) {
-          ctx.fillStyle = '#fff';
-          ctx.strokeStyle = '#000';
-          ctx.lineWidth = 3;
-          ctx.font = 'bold 14px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.strokeText('my', cx, hy - e.headRadius - 10);
-          ctx.fillText('my', cx, hy - e.headRadius - 10);
+          c.fillStyle = '#fff';
+          c.strokeStyle = '#000';
+          c.lineWidth = 3;
+          c.font = 'bold 14px sans-serif';
+          c.textAlign = 'center';
+          c.strokeText('my', cx, hy - e.headRadius - 10);
+          c.fillText('my', cx, hy - e.headRadius - 10);
         }
       }
       drawChar(playerRef.current, true);
       drawChar(aiRef.current, false);
 
-      // 궁극기 (T) — 하늘에서 반짝이며 내려오는 이펙트 (간지 업)
+      // 궁극기 (T) — 하늘에서 반짝이며 내려오는 이펙트 (더 반짝반짝 화려하게)
       const uFall = ultimateFallingRef.current;
-      if (uFall && ctx) {
+      if (uFall) {
         const cx = uFall.targetAx;
-        const beamW = 120;
-        ctx.save();
-        // 외곽 글로우 (넓게)
-        const gOuter = ctx.createLinearGradient(cx - beamW, FIELD_TOP, cx + beamW, uFall.y + 100);
+        const beamW = 150;
+        const tUlt = performance.now() * 0.008;
+        c.save();
+        // 외곽 글로우 (더 넓고 밝게)
+        const gOuter = c.createLinearGradient(cx - beamW, FIELD_TOP, cx + beamW, uFall.y + 120);
         gOuter.addColorStop(0, 'rgba(255,255,255,0)');
-        gOuter.addColorStop(0.15, 'rgba(255,235,59,0.12)');
-        gOuter.addColorStop(0.35, 'rgba(255,213,0,0.25)');
-        gOuter.addColorStop(0.5, 'rgba(255,193,7,0.35)');
-        gOuter.addColorStop(0.7, 'rgba(255,171,0,0.3)');
-        gOuter.addColorStop(0.85, 'rgba(255,152,0,0.2)');
-        gOuter.addColorStop(1, 'rgba(255,255,255,0.08)');
-        ctx.globalAlpha = 0.95;
-        ctx.fillStyle = gOuter;
-        ctx.fillRect(cx - beamW, FIELD_TOP, beamW * 2, uFall.y - FIELD_TOP + 120);
-        // 코어 빔 (좁고 밝게)
-        const gCore = ctx.createLinearGradient(cx, FIELD_TOP, cx, uFall.y + 80);
+        gOuter.addColorStop(0.1, `rgba(255,235,59,${0.15 + Math.sin(tUlt * 4) * 0.05})`);
+        gOuter.addColorStop(0.3, `rgba(255,213,0,${0.3 + Math.sin(tUlt * 3) * 0.08})`);
+        gOuter.addColorStop(0.5, `rgba(255,193,7,${0.45 + Math.sin(tUlt * 5) * 0.1})`);
+        gOuter.addColorStop(0.7, 'rgba(255,171,0,0.4)');
+        gOuter.addColorStop(0.85, 'rgba(255,152,0,0.25)');
+        gOuter.addColorStop(1, 'rgba(255,255,255,0.12)');
+        c.globalAlpha = 0.98;
+        c.fillStyle = gOuter;
+        c.fillRect(cx - beamW, FIELD_TOP, beamW * 2, uFall.y - FIELD_TOP + 140);
+        // 코어 빔 (펄스 반짝임)
+        const pulse = 0.85 + Math.sin(tUlt * 6) * 0.15;
+        const gCore = c.createLinearGradient(cx, FIELD_TOP, cx, uFall.y + 90);
         gCore.addColorStop(0, 'rgba(255,255,255,0)');
-        gCore.addColorStop(0.2, 'rgba(255,255,255,0.4)');
-        gCore.addColorStop(0.45, 'rgba(255,245,157,0.7)');
-        gCore.addColorStop(0.65, 'rgba(255,235,59,0.85)');
-        gCore.addColorStop(0.85, 'rgba(255,213,0,0.6)');
-        gCore.addColorStop(1, 'rgba(255,193,7,0.35)');
-        ctx.fillStyle = gCore;
-        ctx.fillRect(cx - 28, FIELD_TOP, 56, uFall.y - FIELD_TOP + 100);
-        ctx.restore();
+        gCore.addColorStop(0.15, `rgba(255,255,255,${0.5 * pulse})`);
+        gCore.addColorStop(0.35, `rgba(255,245,157,${0.85 * pulse})`);
+        gCore.addColorStop(0.55, 'rgba(255,235,59,0.95)');
+        gCore.addColorStop(0.75, 'rgba(255,213,0,0.8)');
+        gCore.addColorStop(0.9, 'rgba(255,193,7,0.5)');
+        gCore.addColorStop(1, 'rgba(255,152,0,0.4)');
+        c.fillStyle = gCore;
+        c.fillRect(cx - 36, FIELD_TOP, 72, uFall.y - FIELD_TOP + 110);
+        // 빔 위 반짝이는 점 (줄마다)
+        for (let row = 0; row < 24; row++) {
+          const py = FIELD_TOP + (uFall.y - FIELD_TOP + 100) * (row / 24) + Math.sin(tUlt * 2 + row * 0.5) * 8;
+          const px = cx + (Math.sin(tUlt * 3 + row * 0.7) * 20);
+          const tw = 0.5 + 0.5 * Math.sin(tUlt * 8 + row);
+          c.globalAlpha = Math.max(0, tw);
+          c.fillStyle = '#fff';
+          c.shadowColor = '#ffeb3b';
+          c.shadowBlur = 12;
+          c.beginPath();
+          c.arc(px, py, 3 + Math.sin(tUlt * 5 + row) * 2, 0, Math.PI * 2);
+          c.fill();
+        }
+        c.shadowBlur = 0;
+        c.restore();
+        // 스파클 (더 크고 빛나게)
         uFall.sparks.forEach((s) => {
           const a = s.life / s.maxLife;
-          ctx.globalAlpha = a;
-          ctx.fillStyle = s.color;
-          ctx.shadowColor = s.color;
-          ctx.shadowBlur = 18;
-          ctx.beginPath();
-          ctx.arc(s.x, s.y, s.size * 1.2, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.shadowBlur = 0;
+          c.globalAlpha = a;
+          c.fillStyle = s.color;
+          c.shadowColor = s.color;
+          c.shadowBlur = 28;
+          c.beginPath();
+          c.arc(s.x, s.y, s.size * 1.4, 0, Math.PI * 2);
+          c.fill();
+          c.shadowBlur = 0;
         });
-        ctx.globalAlpha = 1;
+        c.globalAlpha = 1;
       }
-      // 궁극기 — 속박 적중 시 짧은 플래시 (간지)
-      if (ultimateImpactRef.current > 0 && ctx) {
+      // 궁극기 — 속박 적중 시 짧은 플래시 (더 반짝반짝 화려하게)
+      if (ultimateImpactRef.current > 0) {
         const ai = aiRef.current;
         const ix = ai.x + ai.w / 2;
         const iy = ai.y + ai.h / 2;
         const life = ultimateImpactRef.current;
         const alpha = life / 25;
-        const r = 40 + (25 - life) * 12;
-        const grad = ctx.createRadialGradient(ix, iy, 0, ix, iy, r);
-        grad.addColorStop(0, `rgba(255,255,255,${alpha * 0.9})`);
-        grad.addColorStop(0.2, `rgba(255,235,59,${alpha * 0.7})`);
-        grad.addColorStop(0.5, `rgba(255,193,7,${alpha * 0.4})`);
-        grad.addColorStop(0.8, `rgba(255,152,0,${alpha * 0.15})`);
+        const r = 50 + (25 - life) * 14;
+        const tImp = performance.now() * 0.015;
+        const grad = c.createRadialGradient(ix, iy, 0, ix, iy, r);
+        grad.addColorStop(0, `rgba(255,255,255,${alpha * 0.98})`);
+        grad.addColorStop(0.15, `rgba(255,235,59,${alpha * 0.85})`);
+        grad.addColorStop(0.4, `rgba(255,193,7,${alpha * 0.5})`);
+        grad.addColorStop(0.7, `rgba(255,152,0,${alpha * 0.2})`);
         grad.addColorStop(1, 'rgba(255,100,0,0)');
-        ctx.save();
-        ctx.globalAlpha = 1;
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(ix, iy, r, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
+        c.save();
+        c.globalAlpha = 1;
+        c.fillStyle = grad;
+        c.beginPath();
+        c.arc(ix, iy, r, 0, Math.PI * 2);
+        c.fill();
+        // 적중 시 반짝이는 별 스파클
+        for (let i = 0; i < 16; i++) {
+          const a = (i / 16) * Math.PI * 2 + tImp * 3;
+          const dist = 25 + (25 - life) * 2 + Math.sin(tImp + i) * 15;
+          const sx = ix + Math.cos(a) * dist;
+          const sy = iy + Math.sin(a) * dist * 0.8;
+          const tw = alpha * (0.6 + 0.4 * Math.sin(tImp * 5 + i));
+          c.globalAlpha = Math.max(0, tw);
+          c.fillStyle = i % 2 === 0 ? '#fff' : '#ffeb3b';
+          c.shadowColor = '#ffd700';
+          c.shadowBlur = 16;
+          c.beginPath();
+          c.arc(sx, sy, 4 + Math.sin(tImp * 4 + i) * 2, 0, Math.PI * 2);
+          c.fill();
+        }
+        c.shadowBlur = 0;
+        c.globalAlpha = 1;
+        c.restore();
       }
-      // 궁극기 — 상대 속박 이펙트 (간지: 고리 + 룬풍 스파클 + 글로우)
-      if (aiBoundRef.current > 0 && ctx) {
+      // 궁극기 — 상대 속박 이펙트 (더 반짝반짝 화려하게: 고리 + 스파클 + 글로우)
+      if (aiBoundRef.current > 0) {
         const ai = aiRef.current;
         const cx = ai.x + ai.w / 2;
         const cy = ai.y + ai.h / 2;
-        const t = performance.now() * 0.01;
-        ctx.save();
-        // 바깥 글로우
-        const glowR = 80 + Math.sin(t) * 8;
-        const gGlow = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowR);
-        gGlow.addColorStop(0, 'rgba(255,235,59,0.25)');
-        gGlow.addColorStop(0.4, 'rgba(255,193,7,0.12)');
-        gGlow.addColorStop(0.7, 'rgba(255,152,0,0.05)');
-        gGlow.addColorStop(1, 'rgba(255,100,0,0)');
-        ctx.fillStyle = gGlow;
-        ctx.beginPath();
-        ctx.arc(cx, cy, glowR, 0, Math.PI * 2);
-        ctx.fill();
-        // 금색 + 보라 톤 고리 (두꺼움)
-        for (let ring = 0; ring < 4; ring++) {
-          const r = 22 + ring * 16 + Math.sin(t + ring * 0.7) * 4;
-          ctx.strokeStyle = ring % 2 === 0 ? 'rgba(255,235,59,0.95)' : 'rgba(186,85,211,0.6)';
-          ctx.lineWidth = 4;
-          ctx.shadowColor = ring % 2 === 0 ? '#ffeb3b' : '#ba55d3';
-          ctx.shadowBlur = 20;
-          ctx.beginPath();
-          ctx.ellipse(cx, cy - 8, r, r * 0.75, t * 0.6 + ring * 0.3, 0, Math.PI * 2);
-          ctx.stroke();
+        const t = performance.now() * 0.015;
+        c.save();
+        // 바깥 글로우 (펄스 반짝임)
+        const pulse = 0.8 + 0.2 * Math.sin(t * 4);
+        const glowR = 95 + Math.sin(t * 2) * 12;
+        const gGlow = c.createRadialGradient(cx, cy, 0, cx, cy, glowR);
+        gGlow.addColorStop(0, `rgba(255,235,59,${0.35 * pulse})`);
+        gGlow.addColorStop(0.3, `rgba(255,193,7,${0.18 * pulse})`);
+        gGlow.addColorStop(0.6, 'rgba(255,152,0,0.08)');
+        gGlow.addColorStop(0.85, 'rgba(255,100,0,0.03)');
+        gGlow.addColorStop(1, 'rgba(255,50,0,0)');
+        c.fillStyle = gGlow;
+        c.beginPath();
+        c.arc(cx, cy, glowR, 0, Math.PI * 2);
+        c.fill();
+        // 금·보라·분홍 고리 (더 많이, 더 빛나게)
+        const ringColors = ['#ffeb3b', '#ba55d3', '#ffc107', '#e91e63', '#fff', '#ff9800'];
+        for (let ring = 0; ring < 6; ring++) {
+          const r = 20 + ring * 14 + Math.sin(t * 1.5 + ring * 0.8) * 6;
+          const colors = ['rgba(255,235,59,0.98)', 'rgba(186,85,211,0.7)', 'rgba(255,193,7,0.9)', 'rgba(233,30,99,0.6)', 'rgba(255,255,255,0.85)', 'rgba(255,152,0,0.75)'];
+          c.strokeStyle = colors[ring % colors.length];
+          c.lineWidth = 5 + Math.sin(t * 3 + ring) * 1.5;
+          c.shadowColor = ringColors[ring % ringColors.length];
+          c.shadowBlur = 24;
+          c.beginPath();
+          c.ellipse(cx, cy - 10, r, r * 0.78, t * 0.8 + ring * 0.4, 0, Math.PI * 2);
+          c.stroke();
         }
-        ctx.shadowBlur = 0;
-        ctx.restore();
-        const sparkCount = 20;
+        c.shadowBlur = 0;
+        c.restore();
+        // 반짝이는 스파클 (더 많이, 크기·투명도 펄스)
+        const sparkCount = 42;
+        const rainbow = ['#fff', '#ffeb3b', '#ffd700', '#ffc107', '#e1bee7', '#f48fb1', '#ffab91', '#fff59d'];
         for (let i = 0; i < sparkCount; i++) {
-          const a = (i / sparkCount) * Math.PI * 2 + t * 2;
-          const r = 20 + Math.sin(t + i * 0.5) * 14;
+          const a = (i / sparkCount) * Math.PI * 2 + t * 2.5;
+          const r = 18 + Math.sin(t * 2 + i * 0.6) * 18;
           const sx = cx + Math.cos(a) * r;
-          const sy = cy - 14 + Math.sin(a) * r * 0.6;
-          const size = 6 + Math.sin(t * 3 + i) * 3;
-          const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, size * 2);
+          const sy = cy - 16 + Math.sin(a) * r * 0.65;
+          const size = 7 + Math.sin(t * 4 + i) * 4;
+          const grad = c.createRadialGradient(sx, sy, 0, sx, sy, size * 2);
           grad.addColorStop(0, 'rgba(255,255,255,0.98)');
-          grad.addColorStop(0.3, 'rgba(255,235,59,0.9)');
-          grad.addColorStop(0.6, 'rgba(255,193,7,0.5)');
-          grad.addColorStop(1, 'rgba(255,152,0,0)');
-          ctx.globalAlpha = 0.85 + Math.sin(t * 2 + i) * 0.15;
-          ctx.fillStyle = grad;
-          ctx.beginPath();
-          ctx.arc(sx, sy, size * 2, 0, Math.PI * 2);
-          ctx.fill();
+          grad.addColorStop(0.25, `rgba(255,235,59,${0.92 + Math.sin(t * 3 + i) * 0.08})`);
+          grad.addColorStop(0.55, 'rgba(255,193,7,0.6)');
+          grad.addColorStop(0.85, 'rgba(255,152,0,0.2)');
+          grad.addColorStop(1, 'rgba(255,100,0,0)');
+          c.globalAlpha = 0.88 + Math.sin(t * 3 + i * 0.5) * 0.12;
+          c.fillStyle = grad;
+          c.shadowColor = rainbow[i % rainbow.length];
+          c.shadowBlur = 14;
+          c.beginPath();
+          c.arc(sx, sy, size * 2, 0, Math.PI * 2);
+          c.fill();
         }
-        ctx.globalAlpha = 1;
+        c.shadowBlur = 0;
+        c.globalAlpha = 1;
       }
 
       // 슈퍼킥 임팩트 — 플래시 (반짝임)
       const flash = superKickFlashRef.current;
-      if (flash && ctx) {
+      if (flash) {
         const r = 35 + (8 - flash.life) * 10;
-        const g = ctx.createRadialGradient(flash.x, flash.y, 0, flash.x, flash.y, r);
+        const g = c.createRadialGradient(flash.x, flash.y, 0, flash.x, flash.y, r);
         g.addColorStop(0, 'rgba(255,255,255,0.95)');
         g.addColorStop(0.2, 'rgba(255,240,180,0.85)');
         g.addColorStop(0.45, 'rgba(255,200,80,0.5)');
         g.addColorStop(0.7, 'rgba(255,120,40,0.2)');
         g.addColorStop(1, 'rgba(255,80,20,0)');
-        ctx.globalAlpha = flash.life / 8;
-        ctx.fillStyle = g;
-        ctx.beginPath();
-        ctx.arc(flash.x, flash.y, r, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.globalAlpha = 1;
+        c.globalAlpha = flash.life / 8;
+        c.fillStyle = g;
+        c.beginPath();
+        c.arc(flash.x, flash.y, r, 0, Math.PI * 2);
+        c.fill();
+        c.globalAlpha = 1;
       }
 
       // 슈퍼킥 임팩트 — 확장 링
       superKickRingsRef.current.forEach((ring) => {
-        if (!ctx) return;
         const a = ring.life / ring.maxLife;
-        ctx.strokeStyle = `rgba(255,200,80,${a})`;
-        ctx.lineWidth = 4;
-        ctx.globalAlpha = a;
-        ctx.beginPath();
-        ctx.arc(ring.x, ring.y, ring.radius, 0, Math.PI * 2);
-        ctx.stroke();
+        c.strokeStyle = `rgba(255,200,80,${a})`;
+        c.lineWidth = 4;
+        c.globalAlpha = a;
+        c.beginPath();
+        c.arc(ring.x, ring.y, ring.radius, 0, Math.PI * 2);
+        c.stroke();
       });
-      if (ctx) {
-        ctx.globalAlpha = 1;
-        ctx.lineWidth = 1;
-      }
+      c.globalAlpha = 1;
+      c.lineWidth = 1;
 
       // 파티클 (불꽃 + 스파클)
       particlesRef.current.forEach((p) => {
         const alpha = p.life / p.maxLife;
-        ctx.globalAlpha = alpha;
-        ctx.fillStyle = p.color;
+        c.globalAlpha = alpha;
+        c.fillStyle = p.color;
         if (p.type === 'spark') {
-          ctx.shadowColor = p.color;
-          ctx.shadowBlur = 8;
+          c.shadowColor = p.color;
+          c.shadowBlur = 8;
         }
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
+        c.beginPath();
+        c.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        c.fill();
         if (p.type === 'spark') {
-          ctx.shadowBlur = 0;
+          c.shadowBlur = 0;
         }
       });
-      ctx.globalAlpha = 1;
+      c.globalAlpha = 1;
 
       // 공 — R 슈퍼킥 시 반짝임 강화
       const b = ballRef.current;
-      if (superKickActiveRef.current && ctx) {
-        ctx.shadowColor = '#fff9c4';
-        ctx.shadowBlur = 42;
-        const glow = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.radius + 22);
+      if (superKickActiveRef.current) {
+        c.shadowColor = '#fff9c4';
+        c.shadowBlur = 42;
+        const glow = c.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.radius + 22);
         glow.addColorStop(0, 'rgba(255,255,220,0.75)');
         glow.addColorStop(0.25, 'rgba(255,240,150,0.5)');
         glow.addColorStop(0.5, 'rgba(255,200,80,0.25)');
         glow.addColorStop(1, 'rgba(255,150,40,0)');
-        ctx.globalAlpha = 0.95;
-        ctx.fillStyle = glow;
-        ctx.beginPath();
-        ctx.arc(b.x, b.y, b.radius + 22, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.globalAlpha = 1;
-        ctx.shadowBlur = 0;
-        ctx.shadowColor = 'transparent';
+        c.globalAlpha = 0.95;
+        c.fillStyle = glow;
+        c.beginPath();
+        c.arc(b.x, b.y, b.radius + 22, 0, Math.PI * 2);
+        c.fill();
+        c.globalAlpha = 1;
+        c.shadowBlur = 0;
+        c.shadowColor = 'transparent';
         for (let i = 0; i < 8; i++) {
           const a = (i / 8) * Math.PI * 2 + (performance.now() * 0.012) % (Math.PI * 2);
           const sx = b.x + Math.cos(a) * (b.radius + 6);
           const sy = b.y + Math.sin(a) * (b.radius + 6);
-          const star = ctx.createRadialGradient(sx, sy, 0, sx, sy, 6);
+          const star = c.createRadialGradient(sx, sy, 0, sx, sy, 6);
           star.addColorStop(0, 'rgba(255,255,255,0.95)');
           star.addColorStop(0.5, 'rgba(255,240,180,0.5)');
           star.addColorStop(1, 'rgba(255,200,100,0)');
-          ctx.fillStyle = star;
-          ctx.beginPath();
-          ctx.arc(sx, sy, 6, 0, Math.PI * 2);
-          ctx.fill();
+          c.fillStyle = star;
+          c.beginPath();
+          c.arc(sx, sy, 6, 0, Math.PI * 2);
+          c.fill();
         }
-        ctx.shadowBlur = 0;
+        c.shadowBlur = 0;
       }
-      const gr = ctx.createRadialGradient(b.x - 4, b.y - 4, 0, b.x, b.y, b.radius);
+      const gr = c.createRadialGradient(b.x - 4, b.y - 4, 0, b.x, b.y, b.radius);
       gr.addColorStop(0, superKickActiveRef.current ? '#fffef5' : '#fff');
       gr.addColorStop(0.5, superKickActiveRef.current ? '#fff0b0' : '#ddd');
       gr.addColorStop(1, superKickActiveRef.current ? '#ffc107' : '#888');
-      ctx.fillStyle = gr;
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = superKickActiveRef.current ? '#ffd54f' : '#333';
-      ctx.lineWidth = superKickActiveRef.current ? 2 : 1;
-      ctx.stroke();
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = '#333';
+      c.fillStyle = gr;
+      c.beginPath();
+      c.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+      c.fill();
+      c.strokeStyle = superKickActiveRef.current ? '#ffd54f' : '#333';
+      c.lineWidth = superKickActiveRef.current ? 2 : 1;
+      c.stroke();
+      c.lineWidth = 1;
+      c.strokeStyle = '#333';
       // 오각형 무늬
-      ctx.fillStyle = superKickActiveRef.current ? '#333' : '#222';
+      c.fillStyle = superKickActiveRef.current ? '#333' : '#222';
       for (let i = 0; i < 5; i++) {
         const angle = (i * 2 * Math.PI) / 5 - Math.PI / 2;
         const px = b.x + Math.cos(angle) * b.radius * 0.5;
         const py = b.y + Math.sin(angle) * b.radius * 0.5;
-        ctx.beginPath();
-        ctx.arc(px, py, 3, 0, Math.PI * 2);
-        ctx.fill();
+        c.beginPath();
+        c.arc(px, py, 3, 0, Math.PI * 2);
+        c.fill();
       }
 
       // 스코어보드
       const sbX = w / 2 - SCOREBOARD_W / 2;
-      ctx.fillStyle = '#1565c0';
-      ctx.fillRect(sbX, SCOREBOARD_Y, SCOREBOARD_W, SCOREBOARD_H);
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(sbX, SCOREBOARD_Y, SCOREBOARD_W, SCOREBOARD_H);
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 24px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(`${playerScoreRef.current} : ${aiScoreRef.current}`, w / 2, SCOREBOARD_Y + 32);
+      c.fillStyle = '#1565c0';
+      c.fillRect(sbX, SCOREBOARD_Y, SCOREBOARD_W, SCOREBOARD_H);
+      c.strokeStyle = '#fff';
+      c.lineWidth = 2;
+      c.strokeRect(sbX, SCOREBOARD_Y, SCOREBOARD_W, SCOREBOARD_H);
+      c.fillStyle = '#fff';
+      c.font = 'bold 24px sans-serif';
+      c.textAlign = 'center';
+      c.fillText(`${playerScoreRef.current} : ${aiScoreRef.current}`, w / 2, SCOREBOARD_Y + 32);
 
       // 쿨다운 게이지 UI
       const cdW = 60;
       const cdH = 8;
       // 플레이어 쿨다운 (왼쪽 하단)
       const pCdRatio = 1 - playerSuperCooldownRef.current / SUPER_KICK_COOLDOWN;
-      ctx.fillStyle = '#333';
-      ctx.fillRect(20, h - 30, cdW, cdH);
-      ctx.fillStyle = pCdRatio >= 1 ? '#ff6b35' : '#888';
-      ctx.fillRect(20, h - 30, cdW * pCdRatio, cdH);
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(20, h - 30, cdW, cdH);
-      ctx.fillStyle = '#fff';
-      ctx.font = '10px sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText('SUPER', 20, h - 34);
+      c.fillStyle = '#333';
+      c.fillRect(20, h - 30, cdW, cdH);
+      c.fillStyle = pCdRatio >= 1 ? '#ff6b35' : '#888';
+      c.fillRect(20, h - 30, cdW * pCdRatio, cdH);
+      c.strokeStyle = '#fff';
+      c.lineWidth = 1;
+      c.strokeRect(20, h - 30, cdW, cdH);
+      c.fillStyle = '#fff';
+      c.font = '10px sans-serif';
+      c.textAlign = 'left';
+      c.fillText('SUPER', 20, h - 34);
 
       // 궁극기 (T) 쿨다운 (왼쪽 하단, SUPER 아래)
       const ultRatio = 1 - ultimateCooldownRef.current / ULTIMATE_COOLDOWN;
-      ctx.fillStyle = '#333';
-      ctx.fillRect(20, h - 52, cdW, cdH);
-      ctx.fillStyle = ultRatio >= 1 ? '#9c27b0' : '#555';
-      ctx.fillRect(20, h - 52, cdW * ultRatio, cdH);
-      ctx.strokeStyle = '#e1bee7';
-      ctx.strokeRect(20, h - 52, cdW, cdH);
-      ctx.fillStyle = '#fff';
-      ctx.fillText('T 궁극기', 20, h - 56);
+      c.fillStyle = '#333';
+      c.fillRect(20, h - 52, cdW, cdH);
+      c.fillStyle = ultRatio >= 1 ? '#9c27b0' : '#555';
+      c.fillRect(20, h - 52, cdW * ultRatio, cdH);
+      c.strokeStyle = '#e1bee7';
+      c.strokeRect(20, h - 52, cdW, cdH);
+      c.fillStyle = '#fff';
+      c.fillText('T 궁극기', 20, h - 56);
 
       // AI 쿨다운 (오른쪽 하단)
       const aCdRatio = 1 - aiSuperCooldownRef.current / SUPER_KICK_COOLDOWN;
-      ctx.fillStyle = '#333';
-      ctx.fillRect(w - 20 - cdW, h - 30, cdW, cdH);
-      ctx.fillStyle = aCdRatio >= 1 ? '#ff6b35' : '#888';
-      ctx.fillRect(w - 20 - cdW, h - 30, cdW * aCdRatio, cdH);
-      ctx.strokeStyle = '#fff';
-      ctx.strokeRect(w - 20 - cdW, h - 30, cdW, cdH);
-      ctx.textAlign = 'right';
-      ctx.fillText('SUPER', w - 20, h - 34);
+      c.fillStyle = '#333';
+      c.fillRect(w - 20 - cdW, h - 30, cdW, cdH);
+      c.fillStyle = aCdRatio >= 1 ? '#ff6b35' : '#888';
+      c.fillRect(w - 20 - cdW, h - 30, cdW * aCdRatio, cdH);
+      c.strokeStyle = '#fff';
+      c.strokeRect(w - 20 - cdW, h - 30, cdW, cdH);
+      c.textAlign = 'right';
+      c.fillText('SUPER', w - 20, h - 34);
 
       // R 슈퍼킥 화면 번쩍번쩍 (이중 플래시)
-      if (screenFlashRef.current > 0 && ctx) {
-        ctx.save();
-        ctx.globalAlpha = screenFlashRef.current;
-        ctx.fillStyle = '#fffef5';
-        ctx.fillRect(0, 0, w, h);
-        ctx.restore();
+      if (screenFlashRef.current > 0) {
+        c.save();
+        c.globalAlpha = screenFlashRef.current;
+        c.fillStyle = '#fffef5';
+        c.fillRect(0, 0, w, h);
+        c.restore();
         screenFlashRef.current = Math.max(0, screenFlashRef.current - 0.1);
         if (screenFlashRef.current > 0 && screenFlashRef.current < 0.4 && !screenFlashSecondRef.current) {
           screenFlashSecondRef.current = true;
@@ -1590,7 +1612,7 @@ export function Game({ onVictory, onQuit, bgmVolume = 0.7, onBgmVolumeChange }: 
 
       // 세리머니: 무지개 + 반짝이는 이펙트 (득점자 위에 간지나게)
       const celEnd = celebrationRef.current;
-      if (celEnd.active && ctx) {
+      if (celEnd.active) {
         const player = playerRef.current;
         const ai = aiRef.current;
         const sx = celEnd.target === 'player' ? player.x + player.w / 2 : ai.x + ai.w / 2;
@@ -1601,7 +1623,7 @@ export function Game({ onVictory, onQuit, bgmVolume = 0.7, onBgmVolumeChange }: 
         // 무지개 그라데이션 링 (회전하며 반짝 — 더 빡치게 강렬)
         for (let ring = 0; ring < 5; ring++) {
           const r = 45 + ring * 28 + Math.sin(t * 2 + ring * 2) * 12;
-          const grad = ctx.createConicGradient(t * 1.5 + ring * 0.7, sx, sy);
+          const grad = c.createConicGradient(t * 1.5 + ring * 0.7, sx, sy);
           grad.addColorStop(0, 'rgba(255,0,0,0.95)');
           grad.addColorStop(0.17, 'rgba(255,127,0,0.95)');
           grad.addColorStop(0.33, 'rgba(255,255,0,0.95)');
@@ -1609,15 +1631,15 @@ export function Game({ onVictory, onQuit, bgmVolume = 0.7, onBgmVolumeChange }: 
           grad.addColorStop(0.67, 'rgba(0,127,255,0.95)');
           grad.addColorStop(0.83, 'rgba(139,0,255,0.95)');
           grad.addColorStop(1, 'rgba(255,0,0,0.95)');
-          ctx.strokeStyle = grad;
-          ctx.lineWidth = 8 + Math.sin(t * 5 + ring) * 3;
-          ctx.shadowBlur = 28;
-          ctx.shadowColor = 'rgba(255,255,255,1)';
-          ctx.beginPath();
-          ctx.arc(sx, sy, r, 0, Math.PI * 2);
-          ctx.stroke();
+          c.strokeStyle = grad;
+          c.lineWidth = 8 + Math.sin(t * 5 + ring) * 3;
+          c.shadowBlur = 28;
+          c.shadowColor = 'rgba(255,255,255,1)';
+          c.beginPath();
+          c.arc(sx, sy, r, 0, Math.PI * 2);
+          c.stroke();
         }
-        ctx.shadowBlur = 0;
+        c.shadowBlur = 0;
 
         // 무지개 스파클 (득점자 주변 반짝반짝 — 더 많이)
         const rainbow = ['#ff0000', '#ff7f00', '#ffff00', '#00ff00', '#0080ff', '#4b0082', '#ee82ee', '#fff', '#ff0'];
@@ -1628,16 +1650,16 @@ export function Game({ onVictory, onQuit, bgmVolume = 0.7, onBgmVolumeChange }: 
           const y = sy - 15 + Math.sin(angle) * dist * 0.7;
           const size = 4 + Math.sin(t * 4 + i) * 3;
           const color = rainbow[i % rainbow.length];
-          ctx.globalAlpha = 0.85 + Math.sin(t * 5 + i * 0.5) * 0.15;
-          ctx.fillStyle = color;
-          ctx.shadowColor = color;
-          ctx.shadowBlur = 12;
-          ctx.beginPath();
-          ctx.arc(x, y, size, 0, Math.PI * 2);
-          ctx.fill();
+          c.globalAlpha = 0.85 + Math.sin(t * 5 + i * 0.5) * 0.15;
+          c.fillStyle = color;
+          c.shadowColor = color;
+          c.shadowBlur = 12;
+          c.beginPath();
+          c.arc(x, y, size, 0, Math.PI * 2);
+          c.fill();
         }
-        ctx.shadowBlur = 0;
-        ctx.globalAlpha = 1;
+        c.shadowBlur = 0;
+        c.globalAlpha = 1;
 
         // 별 모양 반짝이 (간지 — 더 빡치게)
         for (let i = 0; i < 24; i++) {
@@ -1646,28 +1668,28 @@ export function Game({ onVictory, onQuit, bgmVolume = 0.7, onBgmVolumeChange }: 
           const starX = sx + Math.cos(a) * r;
           const starY = sy - 20 + Math.sin(a) * r * 0.6;
           const pulse = 0.5 + 0.5 * Math.sin(t * 8 + i);
-          ctx.save();
-          ctx.translate(starX, starY);
-          ctx.rotate(t * 1.5 + i * 0.4);
-          ctx.scale(pulse, pulse);
-          ctx.fillStyle = rainbow[i % rainbow.length];
-          ctx.shadowColor = '#fff';
-          ctx.shadowBlur = 20;
-          ctx.beginPath();
+          c.save();
+          c.translate(starX, starY);
+          c.rotate(t * 1.5 + i * 0.4);
+          c.scale(pulse, pulse);
+          c.fillStyle = rainbow[i % rainbow.length];
+          c.shadowColor = '#fff';
+          c.shadowBlur = 20;
+          c.beginPath();
           for (let k = 0; k < 5; k++) {
             const th = (k / 5) * Math.PI * 2 - Math.PI / 2;
             const x = Math.cos(th) * 10;
             const y = Math.sin(th) * 10;
-            if (k === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
+            if (k === 0) c.moveTo(x, y);
+            else c.lineTo(x, y);
           }
-          ctx.closePath();
-          ctx.fill();
-          ctx.restore();
+          c.closePath();
+          c.fill();
+          c.restore();
         }
-        ctx.shadowBlur = 0;
+        c.shadowBlur = 0;
 
-        ctx.restore();
+        c.restore();
 
         // 화면 전체 반짝반짝 (얄미운 전역 스파클)
         const twinkle = performance.now() * 0.003;
@@ -1676,19 +1698,19 @@ export function Game({ onVictory, onQuit, bgmVolume = 0.7, onBgmVolumeChange }: 
           const py = ((i * 97.3 + twinkle * 150 + i * 11) % (h + 80)) - 40;
           const alpha = 0.25 + 0.5 * Math.sin(twinkle * 12 + i * 0.7);
           const size = Math.max(0.5, 2 + Math.sin(twinkle * 8 + i * 0.5) * 2.5);
-          ctx.globalAlpha = Math.max(0, alpha);
-          ctx.fillStyle = rainbow[i % rainbow.length];
-          ctx.shadowColor = rainbow[i % rainbow.length];
-          ctx.shadowBlur = 8;
-          ctx.beginPath();
-          ctx.arc(px, py, size, 0, Math.PI * 2);
-          ctx.fill();
+          c.globalAlpha = Math.max(0, alpha);
+          c.fillStyle = rainbow[i % rainbow.length];
+          c.shadowColor = rainbow[i % rainbow.length];
+          c.shadowBlur = 8;
+          c.beginPath();
+          c.arc(px, py, size, 0, Math.PI * 2);
+          c.fill();
         }
-        ctx.shadowBlur = 0;
-        ctx.globalAlpha = 1;
+        c.shadowBlur = 0;
+        c.globalAlpha = 1;
 
         // 세리머니 텍스트 (화면 중앙) — 커졌다 작아졌다 + 반짝반짝
-        if (celEnd.message && ctx) {
+        if (celEnd.message) {
           const txtTime = performance.now() * 0.004;
           const scale = 0.88 + 0.2 * Math.sin(txtTime * 2.5);
           const sparkle = 0.82 + 0.18 * Math.sin(txtTime * 7);
@@ -1696,22 +1718,22 @@ export function Game({ onVictory, onQuit, bgmVolume = 0.7, onBgmVolumeChange }: 
           const cx = w / 2;
           const cy = h / 2 - 20;
           const fontSize = Math.max(56, Math.min(140, Math.round(Math.min(w, h) * 0.14)));
-          ctx.save();
-          ctx.translate(cx, cy);
-          ctx.scale(scale, scale);
-          ctx.translate(-cx, -cy);
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.font = `bold ${fontSize}px sans-serif`;
-          ctx.globalAlpha = sparkle;
-          ctx.shadowBlur = Math.max(4, blur);
-          ctx.shadowColor = `rgba(255,255,255,${0.7 + 0.3 * Math.sin(txtTime * 6)})`;
-          ctx.fillStyle = '#fff';
-          ctx.strokeStyle = '#333';
-          ctx.lineWidth = Math.max(3, Math.round(fontSize / 10));
-          ctx.strokeText(celEnd.message, cx, cy);
-          ctx.fillText(celEnd.message, cx, cy);
-          ctx.restore();
+          c.save();
+          c.translate(cx, cy);
+          c.scale(scale, scale);
+          c.translate(-cx, -cy);
+          c.textAlign = 'center';
+          c.textBaseline = 'middle';
+          c.font = `bold ${fontSize}px sans-serif`;
+          c.globalAlpha = sparkle;
+          c.shadowBlur = Math.max(4, blur);
+          c.shadowColor = `rgba(255,255,255,${0.7 + 0.3 * Math.sin(txtTime * 6)})`;
+          c.fillStyle = '#fff';
+          c.strokeStyle = '#333';
+          c.lineWidth = Math.max(3, Math.round(fontSize / 10));
+          c.strokeText(celEnd.message, cx, cy);
+          c.fillText(celEnd.message, cx, cy);
+          c.restore();
         }
       }
     }
