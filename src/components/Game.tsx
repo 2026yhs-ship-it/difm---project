@@ -330,11 +330,10 @@ export function Game({ onVictory, onQuit, bgmVolume = 0.7, onBgmVolumeChange }: 
       }
       // 세리머니: 화면 돌리기 + 득점자 확대 (끝나면 리셋 타이머 시작)
       const totalGoals = playerScoreRef.current + aiScoreRef.current;
-      const celebMessage = totalGoals === 1
-        ? '이동훈 대표님 화이팅!!'
-        : totalGoals === 2
-          ? '전북인공지능고등학교 화이팅!!'
-          : (totalGoals % 2 === 1 ? '이동훈 대표님 화이팅!!' : '전북인공지능고등학교 화이팅!!');
+      const CELEB_TEXTS = ['이동훈 대표님 화이팅!!', '전북인공지능고등학교 화이팅!!', '유혜성 개존잘 화이팅!!'];
+      const celebMessage = totalGoals <= 3
+        ? CELEB_TEXTS[totalGoals - 1]
+        : CELEB_TEXTS[(totalGoals - 1) % 3];
       celebrationRef.current = {
         active: true,
         progress: 0,
@@ -1688,19 +1687,30 @@ export function Game({ onVictory, onQuit, bgmVolume = 0.7, onBgmVolumeChange }: 
         ctx.shadowBlur = 0;
         ctx.globalAlpha = 1;
 
-        // 세리머니 텍스트 (화면 중앙)
+        // 세리머니 텍스트 (화면 중앙) — 커졌다 작아졌다 + 반짝반짝
         if (celEnd.message && ctx) {
+          const txtTime = performance.now() * 0.004;
+          const scale = 0.88 + 0.2 * Math.sin(txtTime * 2.5);
+          const sparkle = 0.82 + 0.18 * Math.sin(txtTime * 7);
+          const blur = 8 + 14 * Math.sin(txtTime * 5) * Math.sin(txtTime * 5);
+          const cx = w / 2;
+          const cy = h / 2 - 20;
+          const fontSize = Math.max(56, Math.min(140, Math.round(Math.min(w, h) * 0.14)));
           ctx.save();
+          ctx.translate(cx, cy);
+          ctx.scale(scale, scale);
+          ctx.translate(-cx, -cy);
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.font = 'bold 32px sans-serif';
-          ctx.shadowBlur = 12;
-          ctx.shadowColor = 'rgba(255,255,255,0.9)';
+          ctx.font = `bold ${fontSize}px sans-serif`;
+          ctx.globalAlpha = sparkle;
+          ctx.shadowBlur = Math.max(4, blur);
+          ctx.shadowColor = `rgba(255,255,255,${0.7 + 0.3 * Math.sin(txtTime * 6)})`;
           ctx.fillStyle = '#fff';
           ctx.strokeStyle = '#333';
-          ctx.lineWidth = 4;
-          ctx.strokeText(celEnd.message, w / 2, h / 2 - 20);
-          ctx.fillText(celEnd.message, w / 2, h / 2 - 20);
+          ctx.lineWidth = Math.max(3, Math.round(fontSize / 10));
+          ctx.strokeText(celEnd.message, cx, cy);
+          ctx.fillText(celEnd.message, cx, cy);
           ctx.restore();
         }
       }
