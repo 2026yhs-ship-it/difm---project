@@ -37,6 +37,7 @@ export function BGM({ volume }: BGMProps) {
   const playerRef = useRef<YTPlayer | null>(null);
   const wantsPlayRef = useRef(false);
   const scriptLoadedRef = useRef(false);
+  const creatingRef = useRef(false);
 
   const hasAPI = useCallback(() => typeof window !== 'undefined' && !!window.YT?.Player, []);
 
@@ -45,19 +46,23 @@ export function BGM({ volume }: BGMProps) {
     if (hasAPI()) return;
     scriptLoadedRef.current = true;
     const script = document.createElement('script');
-    script.src = 'https://www.youtube-nocookie.com/iframe_api';
+    script.src = 'https://www.youtube.com/iframe_api';
     script.async = true;
     document.body.appendChild(script);
   }, [hasAPI]);
 
   const createAndPlay = useCallback(() => {
     if (!hasAPI()) return;
-    if (!document.getElementById('bgm-yt-iframe') || playerRef.current) return;
+    const el = document.getElementById('bgm-yt-iframe');
+    if (!el || playerRef.current || creatingRef.current) return;
+    creatingRef.current = true;
+    const failSafe = setTimeout(() => {
+      if (!playerRef.current) creatingRef.current = false;
+    }, 8000);
     try {
       new window.YT!.Player('bgm-yt-iframe', {
         videoId: YOUTUBE_VIDEO_ID,
         playerVars: {
-          origin: window.location.origin,
           autoplay: 1,
           loop: 1,
           playlist: YOUTUBE_VIDEO_ID,
@@ -67,9 +72,12 @@ export function BGM({ volume }: BGMProps) {
           disablekb: 1,
           fs: 0,
           iv_load_policy: 3,
+          enablejsapi: 1,
         },
         events: {
           onReady(ev) {
+            clearTimeout(failSafe);
+            creatingRef.current = false;
             const p = ev.target as unknown as YTPlayer;
             playerRef.current = p;
             const v = Math.max(0, Math.min(1, volume));
@@ -77,9 +85,15 @@ export function BGM({ volume }: BGMProps) {
             if (v <= 0) p.mute();
             else p.unMute();
             if (wantsPlayRef.current) {
-              p.playVideo();
-              setPlaying(true);
               wantsPlayRef.current = false;
+              setTimeout(() => {
+                try {
+                  p.playVideo();
+                  setPlaying(true);
+                } catch {
+                  setPlaying(false);
+                }
+              }, 150);
             }
           },
           onStateChange(ev: { data: number; target: YTPlayer }) {
@@ -89,6 +103,8 @@ export function BGM({ volume }: BGMProps) {
         },
       });
     } catch {
+      clearTimeout(failSafe);
+      creatingRef.current = false;
       wantsPlayRef.current = false;
     }
   }, [hasAPI, volume]);
@@ -117,18 +133,25 @@ export function BGM({ volume }: BGMProps) {
         const poll = setInterval(() => {
           const px = playerRef.current;
           if (px && wantsPlayRef.current) {
-            px.playVideo();
-            setPlaying(true);
-            wantsPlayRef.current = false;
+            try {
+              px.playVideo();
+              setPlaying(true);
+            } finally {
+              wantsPlayRef.current = false;
+            }
             clearInterval(poll);
           }
-        }, 150);
-        setTimeout(() => clearInterval(poll), 4000);
+        }, 200);
+        setTimeout(() => clearInterval(poll), 5000);
       };
-      tryCreate();
-      if (!hasAPI()) {
+      if (hasAPI()) {
+        tryCreate();
+      } else {
         const w = setInterval(() => {
-          if (hasAPI()) { clearInterval(w); tryCreate(); }
+          if (hasAPI()) {
+            clearInterval(w);
+            tryCreate();
+          }
         }, 100);
         setTimeout(() => clearInterval(w), 10000);
       }
@@ -140,8 +163,12 @@ export function BGM({ volume }: BGMProps) {
       p.pauseVideo();
       setPlaying(false);
     } else {
-      p.playVideo();
-      setPlaying(true);
+      try {
+        p.playVideo();
+        setPlaying(true);
+      } catch {
+        setPlaying(false);
+      }
     }
   }, [createAndPlay, hasAPI, loadYouTubeAPI]);
 
