@@ -80,8 +80,9 @@ export function BGM({ volume }: BGMProps) {
           onReady(ev) {
             const p = ev.target as unknown as YTPlayer;
             playerRef.current = p;
-            p.setVolume(volume * 100);
-            if (volume <= 0) p.mute();
+            const v = Math.max(0, Math.min(1, volume));
+            p.setVolume(Math.round(v * 100));
+            if (v <= 0) p.mute();
             else p.unMute();
             if (wantsPlayRef.current) {
               p.playVideo();
@@ -104,9 +105,13 @@ export function BGM({ volume }: BGMProps) {
     const p = playerRef.current;
     if (!p) return;
     const v = Math.max(0, Math.min(1, volume));
-    p.setVolume(v * 100);
-    if (v <= 0) p.mute();
-    else p.unMute();
+    try {
+      p.setVolume(Math.round(v * 100));
+      if (v <= 0) p.mute();
+      else p.unMute();
+    } catch {
+      /* ignore */
+    }
   }, [volume]);
 
   const toggle = useCallback(() => {

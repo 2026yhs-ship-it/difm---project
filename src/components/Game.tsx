@@ -1757,6 +1757,7 @@ export function Game({ onVictory, onQuit, bgmVolume = 0.7, onBgmVolumeChange }: 
                 type="range"
                 min={0}
                 max={100}
+                step={1}
                 value={Math.round((bgmVolume ?? 0.7) * 100)}
                 onChange={(e) => onBgmVolumeChange?.(Number(e.target.value) / 100)}
                 className="pause-bgm-slider"
