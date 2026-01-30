@@ -2,12 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 const YOUTUBE_VIDEO_ID = 'I3ICpSdzUpY';
 
-function isLocalhost(): boolean {
-  if (typeof window === 'undefined') return false;
-  const h = window.location.hostname;
-  return h === 'localhost' || h === '127.0.0.1';
-}
-
 declare global {
   interface Window {
     YT?: {
@@ -38,8 +32,6 @@ interface BGMProps {
   volume: number;
 }
 
-const EMBED_PARAMS = `autoplay=1&loop=1&playlist=${YOUTUBE_VIDEO_ID}&controls=0&disablekb=1&fs=0&modestbranding=1&rel=0`;
-
 export function BGM({ volume }: BGMProps) {
   const [playing, setPlaying] = useState(false);
   const playerRef = useRef<YTPlayer | null>(null);
@@ -49,7 +41,7 @@ export function BGM({ volume }: BGMProps) {
   const hasAPI = useCallback(() => typeof window !== 'undefined' && !!window.YT?.Player, []);
 
   const loadYouTubeAPI = useCallback(() => {
-    if (typeof window === 'undefined' || scriptLoadedRef.current || isLocalhost()) return;
+    if (typeof window === 'undefined' || scriptLoadedRef.current) return;
     if (hasAPI()) return;
     scriptLoadedRef.current = true;
     const script = document.createElement('script');
@@ -115,10 +107,6 @@ export function BGM({ volume }: BGMProps) {
   }, [volume]);
 
   const toggle = useCallback(() => {
-    if (isLocalhost()) {
-      setPlaying((prev) => !prev);
-      return;
-    }
     const p = playerRef.current;
     if (!p) {
       wantsPlayRef.current = true;
@@ -158,12 +146,12 @@ export function BGM({ volume }: BGMProps) {
   }, [createAndPlay, hasAPI, loadYouTubeAPI]);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || isLocalhost()) return;
+    if (typeof window === 'undefined') return;
     loadYouTubeAPI();
   }, [loadYouTubeAPI]);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || isLocalhost()) return;
+    if (typeof window === 'undefined') return;
     const prev = window.onYouTubeIframeAPIReady;
     window.onYouTubeIframeAPIReady = () => {
       prev?.();
@@ -171,33 +159,6 @@ export function BGM({ volume }: BGMProps) {
     };
     return () => { window.onYouTubeIframeAPIReady = prev; };
   }, [createAndPlay]);
-
-  if (isLocalhost()) {
-    return (
-      <>
-        {playing && (
-          <div className="bgm-yt-container bgm-yt-container--active" aria-hidden>
-            <iframe
-              title="BGM"
-              src={`https://www.youtube-nocookie.com/embed/${YOUTUBE_VIDEO_ID}?${EMBED_PARAMS}`}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
-              allowFullScreen
-              style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none', border: 0 }}
-            />
-          </div>
-        )}
-        <button
-          type="button"
-          className="bgm-toggle"
-          onClick={toggle}
-          title={playing ? 'BGM 끄기' : 'BGM 켜기'}
-          aria-label={playing ? 'BGM 끄기' : 'BGM 켜기'}
-        >
-          {playing ? '🔊 BGM' : '🔇 BGM'}
-        </button>
-      </>
-    );
-  }
 
   return (
     <>
