@@ -21,8 +21,9 @@ export function MainMenu({ onStart }: MainMenuProps) {
           <li><kbd>Space</kbd> — 헤딩</li>
           <li><kbd>R</kbd> — <strong>🔥 슈퍼킥</strong> (쿨다운)</li>
           <li><kbd>F</kbd> — 태클</li>
+          <li><kbd>T</kbd> — <strong>⚡ 궁극기</strong> (쿨다운): 하늘에서 빛이 내려와 상대를 속박</li>
         </ul>
-        <p>슈퍼킥으로 강력한 슛을 날려 5골 먼저 달성하면 승리!</p>
+        <p>슈퍼킥·<kbd>T</kbd> 궁극기로 유리하게! 5골 먼저 달성하면 승리!</p>
       </div>
     </div>
   );
