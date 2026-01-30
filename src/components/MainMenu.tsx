@@ -14,6 +14,7 @@ export function MainMenu({ onStart }: MainMenuProps) {
 
       <div className="main-menu__how">
         <h2>게임 방법</h2>
+        <p className="main-menu__bgm">🎵 화면 <strong>우측 상단</strong>에 <kbd>BGM</kbd> 버튼이 있습니다. 눌러서 배경음을 켜고 끌 수 있어요.</p>
         <ul>
           <li><kbd>D</kbd> — 앞으로 가기</li>
           <li><kbd>A</kbd> — 뒤로 가기</li>

@@ -53,7 +53,7 @@ export function BGM({ volume }: BGMProps) {
     if (hasAPI()) return;
     scriptLoadedRef.current = true;
     const script = document.createElement('script');
-    script.src = 'https://www.youtube.com/iframe_api';
+    script.src = 'https://www.youtube-nocookie.com/iframe_api';
     script.async = true;
     document.body.appendChild(script);
   }, [hasAPI]);
@@ -179,7 +179,7 @@ export function BGM({ volume }: BGMProps) {
           <div className="bgm-yt-container bgm-yt-container--active" aria-hidden>
             <iframe
               title="BGM"
-              src={`https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?${EMBED_PARAMS}`}
+              src={`https://www.youtube-nocookie.com/embed/${YOUTUBE_VIDEO_ID}?${EMBED_PARAMS}`}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
               allowFullScreen
               style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none', border: 0 }}

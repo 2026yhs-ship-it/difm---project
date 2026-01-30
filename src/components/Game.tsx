@@ -628,50 +628,10 @@ export function Game({ onVictory, onQuit, bgmVolume = 0.7, onBgmVolumeChange }: 
         aiBehaviorSeedRef.current = Math.random();
       }
       
-      // 전략: 기본은 그냥 공 따라가기, 수비/공격 상황에서만 특수 동작 (수비·공격 디지게 잘하게)
-      let targetX = predictedBallX; // 기본 = 공 예상 위치 추격
-      let moveSpeed = AI_SPEED * 1.5; // 공 따라갈 때 빠르게
-      
-      // [수비] AI 골대 위험 → 골대 앞 수비 (디지게 잘)
-      if (ballNearAiGoal || ballMovingToAiGoal || ballVeryNearAiGoal) {
-        const aiGoalX = GOAL_RIGHT - GOAL_DEPTH - 30;
-        const interceptY = ball.y + ball.vy * 8;
-        targetX = aiGoalX;
-        if (interceptY > GOAL_TOP - 20 && interceptY < GOAL_BOTTOM + 20) {
-          const goalCenterY = (GOAL_TOP + GOAL_BOTTOM) / 2;
-          targetX = aiGoalX + (interceptY - goalCenterY) * 0.3;
-        }
-        moveSpeed = AI_SPEED * 1.9;
-      }
-      // [수비] 우리 골대 위험 — 빠른 공/다가오는 공 즉시 인터셉트 (디지게 잘)
-      else if (fastBallToGoal || (ballSpeed > 8 && ball.vx < -3 && ball.x < CANVAS_W / 2 + 200)) {
-        const goalX = GOAL_DEPTH + 20;
-        const interceptTime = Math.max(0, (goalX - ball.x) / (ball.vx + 0.1));
-        const interceptY = ball.y + ball.vy * interceptTime + BALL_GRAVITY * interceptTime * interceptTime * 0.5;
-        targetX = goalX;
-        if (interceptY > GOAL_TOP - 30 && interceptY < GOAL_BOTTOM + 30) {
-          const goalCenterY = (GOAL_TOP + GOAL_BOTTOM) / 2;
-          targetX = goalX + (interceptY - goalCenterY) * 0.5;
-        }
-        moveSpeed = AI_SPEED * 1.85;
-      }
-      else if (ballMovingToPlayerGoal || ballNearPlayerGoal || (ball.vx < -2 && ball.x < 350)) {
-        const goalX = GOAL_DEPTH + 25;
-        const interceptTime = (goalX - ball.x) / (ball.vx + 0.1);
-        const interceptY = ball.y + ball.vy * interceptTime + BALL_GRAVITY * interceptTime * interceptTime * 0.5;
-        targetX = goalX;
-        if (interceptY > GOAL_TOP - 20 && interceptY < GOAL_BOTTOM + 20) {
-          const goalCenterY = (GOAL_TOP + GOAL_BOTTOM) / 2;
-          targetX = goalX + (interceptY - goalCenterY) * 0.4;
-        }
-        moveSpeed = AI_SPEED * 1.6;
-      }
-      // 그 외 전부: 그냥 공 따라가기 (예상 위치로 빠르게)
-      else {
-        targetX = predictedBallX;
-        if (ballDist < 50) targetX = ball.x;
-        moveSpeed = AI_SPEED * 1.5;
-      }
+      // 전략: 상대는 항상 공 따라다니기 (계속 공 추격)
+      let targetX = predictedBallX;
+      let moveSpeed = AI_SPEED * 1.6;
+      if (ballDist < 50) targetX = ball.x;
       
       if (ballDist < 25 && ball.x > CANVAS_W / 2) {
         targetX = ball.x - 40;

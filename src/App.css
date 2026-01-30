@@ -69,6 +69,12 @@
   color: #e2e8f0;
 }
 
+.main-menu__bgm {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  margin: 0 0 0.85rem 0;
+}
+
 .main-menu__how ul {
   list-style: none;
   padding: 0;
